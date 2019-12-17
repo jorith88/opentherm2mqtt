@@ -75,7 +75,8 @@ openthermGateway.on('data', data => {
 		for ( let topic in topics ) {
 			if ( topics[ topic ] !== previous[ topic ] ) {
 				mqtt.publish( topic, String( topics[ topic ] ), {
-					retain: true
+					retain: true,
+					qos: 1
 				} );
 				previous[ topic ] = topics[ topic ];
 			}
