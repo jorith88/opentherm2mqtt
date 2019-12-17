@@ -25,15 +25,16 @@ openthermGateway.on('data', data => {
 	// check for OT packets
 	const target = data.slice( 0, 1 ); // B, T, A, R, E
 	const type = data.slice( 1, 2 ); //
-	// const id = parseInt( data.slice( 3, 5 ), 16 ); //
+	const id = parseInt( data.slice( 3, 5 ), 16 ); //
 	const payload = data.slice( -4 ); // last 4 chars
 
 	if (data.length != 9) {
 		console.warn(`Invalid data length: ${data}`)
 	}
 
-	if ( isSupportedMessage(target, type) && openthermId in constants.OPENTHERM_IDS ) {
-		topic = `${config.mqtt.topic.values}/${openthermId.name}`
+	if ( isSupportedMessage(target, type) && id in constants.OPENTHERM_IDS ) {
+		const openthermId = constants.OPENTHERM_IDS[id]
+		const topic = `${config.mqtt.topic.values}/${openthermId.name}`
 
 		switch ( openthermId.type ) {
 			case 'flag8':
