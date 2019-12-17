@@ -5,14 +5,14 @@
 * Thanks to hekkers.net
 */
 
-const config = require('./config.json')
+const config = require('./lib/config.json')
 
 const SerialPort = require('serialport')
 const Readline = require('@serialport/parser-readline')
 const serialPort = new SerialPort(config.otgw.device, { baudRate: config.otgw.baudrate })
 
 const mqtt = require( 'mqtt' )
-const convert = require('./convert.js')
+const convert = require('./lib/convert.js')
 
 const opentherm_ids = {
 		0: "flame_status",
@@ -69,10 +69,6 @@ let topics = []
 
 const parser = serialPort.pipe(new Readline({ delimiter: '\r\n' }))
 
-//serialPort.on( 'open', function () {
-// console.log( 'Serial port open' );
-//} );
-
 client = mqtt.connect( config.mqtt.url, {
 	will: {
 		topic: config.mqtt.topic.status,
@@ -83,42 +79,45 @@ client = mqtt.connect( config.mqtt.url, {
 	username: config.mqtt.username,
 	password: config.mqtt.password
 } );
+
 client.publish( config.mqtt.topic.log, 'service started' );
+
 client.publish( config.mqtt.topic.status, 'online', {
 	retain: true,
 	qos: 1
 } );
+
 client.subscribe( config.mqtt.topic.control.subscribe );
 
 client.on( 'message', function ( topic, message ) {
 	switch ( topic ) {
-	case config.mqtt.topic.control.status:
-		result = 'online';
-		break;
+		case config.mqtt.topic.control.status:
+			result = 'online';
+			break;
 
-	case config.mqtt.topic.control.temp_temporary:
-		serialPort.write( 'TT=' + message + '\r\n' );
-		result = message;
-		break;
+		case config.mqtt.topic.control.temp_temporary:
+			serialPort.write( 'TT=' + message + '\r\n' );
+			result = message;
+			break;
 
-	case config.mqtt.topic.control.temp_constant:
-		serialPort.write( 'TC=' + message + '\r\n' );
-		result = message;
-		break;
+		case config.mqtt.topic.control.temp_constant:
+			serialPort.write( 'TC=' + message + '\r\n' );
+			result = message;
+			break;
 
-	case config.mqtt.topic.control.hot_water:
-		result = message;
-		serialPort.write( 'HW=' + message + '\r\n' );
-		break;
+		case config.mqtt.topic.control.hot_water:
+			result = message;
+			serialPort.write( 'HW=' + message + '\r\n' );
+			break;
 
-	case config.mqtt.topic.control.temp_outside:
-		result = message;
-		serialPort.write( 'OT=' + message + '\r\n' );
-		break;
+		case config.mqtt.topic.control.temp_outside:
+			result = message;
+			serialPort.write( 'OT=' + message + '\r\n' );
+			break;
 	}
 
 	client.publish( `${config.mqtt.topic.log}/${topic}`, result );
-} );
+});
 
 parser.on( 'data', function ( data ) {
 	// check for OT packets

@@ -2,9 +2,9 @@
   "name": "otg2mqtt",
   "version": "1.0.0",
   "description": "MQTT bridge for the OpenTherm Gateway",
-  "main": "otg2mqtt.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node otg2mqtt.js"
+    "start": "node index.js"
   },
   "repository": {
     "type": "git",
