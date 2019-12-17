@@ -17,9 +17,72 @@ let previous = []
 let topics = []
 
 const isSupportedMessage = function(target, type) {
-	return (target == "B" || target == "T" || target == "A")
-		&& (type == "1" || type == "4" || type == "C" || type == "9" )
+	return (target == 'B' || target == 'T' || target == 'A')
+		&& (type == '1' || type == '4' || type == 'C' || type == '9' )
 }
+
+openthermGateway.on('data', data => {
+	// check for OT packets
+	const target = data.slice( 0, 1 ); // B, T, A, R, E
+	const type = data.slice( 1, 2 ); //
+	// const id = parseInt( data.slice( 3, 5 ), 16 ); //
+	const payload = data.slice( -4 ); // last 4 chars
+
+	if (data.length != 9) {
+		console.warn(`Invalid data length: ${data}`)
+	}
+
+	if ( isSupportedMessage(target, type) && openthermId in constants.OPENTHERM_IDS ) {
+		topic = `${config.mqtt.topic.values}/${openthermId.name}`
+
+		switch ( openthermId.type ) {
+			case 'flag8':
+				if ( target !== 'A' ) {
+					topics[ topic ] = convert.hex2dec( payload );
+
+					if ( ( topics[ topic ] & ( 1 << 1 ) ) > 0 ) {
+						topics[ `${config.mqtt.topic.values}/flame_status_ch` ] = 1;
+					} else {
+						topics[ `${config.mqtt.topic.values}/flame_status_ch` ] = 0;
+					}
+
+					if ( ( topics[ topic ] & ( 1 << 2 ) ) > 0 ) {
+						topics[ `${config.mqtt.topic.values}/flame_status_dhw` ] = 1;
+					} else {
+						topics[ `${config.mqtt.topic.values}/flame_status_dhw` ] = 0;
+					}
+
+					if ( ( topics[ topic ] & ( 1 << 3 ) ) > 0 ) {
+						topics[ `${config.mqtt.topic.values}/flame_status_bit` ] = 1;
+					} else {
+						topics[ `${config.mqtt.topic.values}/flame_status_bit` ] = 0;
+					}
+				}
+				break;
+
+			case 'f8.8':
+				topics[ topic ] = ( parseInt( payload, 16 ) / 256 ).toFixed( 2 );
+				break;
+
+			case 'u16':
+				topics[ topic ] = parseInt( payload, 16 );
+				break;
+			
+			default:
+				console.warn(`Unsupported OpenTherm data type ${openthermId.type}`)
+		}
+
+		// check for changes that need to be published
+		for ( let topic in topics ) {
+			if ( topics[ topic ] !== previous[ topic ] ) {
+				mqtt.publish( topic, String( topics[ topic ] ), {
+					retain: true
+				} );
+				previous[ topic ] = topics[ topic ];
+			}
+		}
+	}
+})
 
 mqtt.on( 'message', function ( { topic, message } ) {
 	switch ( topic ) {
@@ -52,62 +115,3 @@ mqtt.on( 'message', function ( { topic, message } ) {
 
 	mqtt.publish(`${config.mqtt.topic.log}/${topic}`, result );
 });
-
-openthermGateway.on('data', data => {
-	// check for OT packets
-	const target = data.slice( 0, 1 ); // B, T, A, R, E
-	const type = data.slice( 1, 2 ); //
-	const id = parseInt( data.slice( 3, 5 ), 16 ); //
-	const payload = data.slice( -4 ); // last 4 chars
-
-	if (data.length != 9) {
-		console.warn(`Invalid data length: ${data}`)
-	}
-
-	if ( isSupportedMessage(target, type) && id in constants.OPENTHERM_IDS ) {
-		topic = `${config.mqtt.topic.values}/${id.name}`;
-		switch ( id.type ) {
-			case 'flag8':
-				if ( target != "A" ) {
-					topics[ topic ] = convert.hex2dec( payload );
-
-					if ( ( topics[ topic ] & ( 1 << 1 ) ) > 0 ) {
-						topics[ `${config.mqtt.topic.values}/flame_status_ch` ] = 1;
-					} else {
-						topics[ `${config.mqtt.topic.values}/flame_status_ch` ] = 0;
-					}
-
-					if ( ( topics[ topic ] & ( 1 << 2 ) ) > 0 ) {
-						topics[ `${config.mqtt.topic.values}/flame_status_dhw` ] = 1;
-					} else {
-						topics[ `${config.mqtt.topic.values}/flame_status_dhw` ] = 0;
-					}
-
-					if ( ( topics[ topic ] & ( 1 << 3 ) ) > 0 ) {
-						topics[ `${config.mqtt.topic.values}/flame_status_bit` ] = 1;
-					} else {
-						topics[ `${config.mqtt.topic.values}/flame_status_bit` ] = 0;
-					}
-				}
-				break;
-
-			case 'f8.8':
-				topics[ topic ] = ( parseInt( payload, 16 ) / 256 ).toFixed( 2 );
-				break;
-
-			case 'u16':
-				topics[ topic ] = parseInt( payload, 16 );
-				break;
-		}
-
-		// check for changes that need to be published
-		for ( var value in topics ) {
-			if ( topics[ value ] != previous[ value ] ) {
-				client.publish( value, String( topics[ value ] ), {
-					retain: true
-				} );
-				previous[ value ] = topics[ value ];
-			}
-		}
-	}
-})
