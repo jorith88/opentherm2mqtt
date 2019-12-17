@@ -139,7 +139,7 @@ parser.on( 'data', function ( data ) {
 					switch ( opentherm_ids_types[ opentherm_id ] ) {
 					case 'flag8':
 						if ( opentherm_target != "A" ) {
-							topics[ topic ] = hex2dec( opentherm_payload );
+							topics[ topic ] = convert.hex2dec( opentherm_payload );
 
 							if ( ( topics[ topic ] & ( 1 << 1 ) ) > 0 ) {
 								topics[ `${config.mqtt.topic.values}/flame_status_ch` ] = 1;
