@@ -4,11 +4,11 @@
   "description": "MQTT bridge for the OpenTherm Gateway",
   "main": "otg2mqtt.js",
   "scripts": {
-    "test": "echo \"Info: no test specified\" && exit 0"
+    "start": "node otg2mqtt.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/githubcdr/opentherm2mqtt.git"
+    "url": "git+https://github.com/jorith88/opentherm2mqtt.git"
   },
   "keywords": [
     "mqtt",
@@ -18,7 +18,11 @@
   "author": "@githubcdr",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/githubcdr/opentherm2mqtt/issues"
+    "url": "https://github.com/jorith88/opentherm2mqtt/issues"
   },
-  "homepage": "https://github.com/githubcdr/opentherm2mqtt#readme"
+  "homepage": "https://github.com/jorith88/opentherm2mqtt#readme",
+  "dependencies": {
+    "mqtt": "^3.0.0",
+    "serialport": "^8.0.5"
+  }
 }

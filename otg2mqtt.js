@@ -5,12 +5,16 @@
 * Thanks to hekkers.net
 */
 
-var com = require( 'serialport' ),
-	mqtt = require( 'mqtt' ),
-	previous = [],
-	topics = [],
+const config = require('./config.json')
 
-	opentherm_ids = {
+const SerialPort = require('serialport')
+const Readline = require('@serialport/parser-readline')
+const serialPort = new SerialPort(config.otgw.device, { baudRate: config.otgw.baudrate })
+
+const mqtt = require( 'mqtt' )
+const convert = require('./convert.js')
+
+const opentherm_ids = {
 		0: "flame_status",
 		1: "control_setpoint",
 		9: "remote_override_setpoint",
@@ -33,9 +37,9 @@ var com = require( 'serialport' ),
 		121: "ch_pump_operation_hours",
 		122: "dhw_pump_valve_operation_hours",
 		123: "dhw_burner_operation_hours"
-	},
+	}
 
-	opentherm_ids_types = {
+const opentherm_ids_types = {
 		0: "flag8",
 		1: "f8.8",
 		9: "f8.8",
@@ -58,102 +62,65 @@ var com = require( 'serialport' ),
 		121: "u16",
 		122: "u16",
 		123: "u16"
-	};
+	}
 
-( function () {
-	var convertBase = function ( num ) {
-		this.from = function ( baseFrom ) {
-			this.to = function ( baseTo ) {
-				return parseInt( num, baseFrom ).toString( baseTo );
-			};
-			return this;
-		};
-		return this;
-	};
+let previous = []
+let topics = []
 
-	// binary to decimal
-	this.bin2dec = function ( num ) {
-		return convertBase( num ).from( 2 ).to( 10 );
-	};
-
-	// binary to hexadecimal
-	this.bin2hex = function ( num ) {
-		return convertBase( num ).from( 2 ).to( 16 );
-	};
-
-	// decimal to binary
-	this.dec2bin = function ( num ) {
-		return convertBase( num ).from( 10 ).to( 2 );
-	};
-
-	// decimal to hexadecimal
-	this.dec2hex = function ( num ) {
-		return convertBase( num ).from( 10 ).to( 16 );
-	};
-
-	// hexadecimal to binary
-	this.hex2bin = function ( num ) {
-		return convertBase( num ).from( 16 ).to( 2 );
-	};
-
-	// hexadecimal to decimal
-	this.hex2dec = function ( num ) {
-		return convertBase( num ).from( 16 ).to( 10 );
-	};
-
-	return this;
-} )();
-
-var serialPort = new com.SerialPort( "/dev/ttyUSB0", {
-	baudrate: 9600,
-	parser: com.parsers.readline( '\r\n' )
-} );
+const parser = serialPort.pipe(new Readline({ delimiter: '\r\n' }))
 
 //serialPort.on( 'open', function () {
 // console.log( 'Serial port open' );
 //} );
 
-client = mqtt.connect( 'mqtt://mqtt.eigenhuis.lan', {
+client = mqtt.connect( config.mqtt.url, {
 	will: {
-		topic: 'status/otg',
+		topic: config.mqtt.topic.status,
 		payload: 'offline',
 		retain: true,
 		qos: 1
-	}
+	},
+	username: config.mqtt.username,
+	password: config.mqtt.password
 } );
-client.publish( 'log/otg', 'service started' );
-client.publish( 'status/otg', 'online', {
+client.publish( config.mqtt.topic.log, 'service started' );
+client.publish( config.mqtt.topic.status, 'online', {
 	retain: true,
 	qos: 1
 } );
-client.subscribe( 'control/otg/#' );
+client.subscribe( config.mqtt.topic.control.subscribe );
 
 client.on( 'message', function ( topic, message ) {
 	switch ( topic ) {
-	case 'control/otg/status':
+	case config.mqtt.topic.control.status:
 		result = 'online';
 		break;
 
-	case 'control/otg/tt':
+	case config.mqtt.topic.control.temp_temporary:
 		serialPort.write( 'TT=' + message + '\r\n' );
 		result = message;
 		break;
 
-	case 'control/otg/tc':
+	case config.mqtt.topic.control.temp_constant:
 		serialPort.write( 'TC=' + message + '\r\n' );
 		result = message;
 		break;
 
-	case 'control/otg/hw':
+	case config.mqtt.topic.control.hot_water:
 		result = message;
 		serialPort.write( 'HW=' + message + '\r\n' );
 		break;
+
+	case config.mqtt.topic.control.temp_outside:
+		result = message;
+		serialPort.write( 'OT=' + message + '\r\n' );
+		break;
 	}
 
-	client.publish( "log/otg" + topic, result );
+	client.publish( `${config.mqtt.topic.log}/${topic}`, result );
 } );
 
-serialPort.on( 'data', function ( data ) {
+parser.on( 'data', function ( data ) {
 	// check for OT packets
 	opentherm_target = data.slice( 0, 1 ); // B, T, A, R, E
 	opentherm_type = data.slice( 1, 2 ); //
@@ -168,28 +135,28 @@ serialPort.on( 'data', function ( data ) {
 			if ( opentherm_type == "1" || opentherm_type == "4" || opentherm_type == "C" || opentherm_type == "9" ) {
 				// if (opentherm_type == "1" || opentherm_type == "4" ) {
 				if ( opentherm_id in opentherm_ids ) {
-					topic = 'value/otg/' + opentherm_ids[ opentherm_id ];
+					topic = `${config.mqtt.topic.values}/${opentherm_ids[ opentherm_id ]}`;
 					switch ( opentherm_ids_types[ opentherm_id ] ) {
 					case 'flag8':
 						if ( opentherm_target != "A" ) {
 							topics[ topic ] = hex2dec( opentherm_payload );
 
 							if ( ( topics[ topic ] & ( 1 << 1 ) ) > 0 ) {
-								topics[ "value/otg/flame_status_ch" ] = 1;
+								topics[ `${config.mqtt.topic.values}/flame_status_ch` ] = 1;
 							} else {
-								topics[ "value/otg/flame_status_ch" ] = 0;
+								topics[ `${config.mqtt.topic.values}/flame_status_ch` ] = 0;
 							}
 
 							if ( ( topics[ topic ] & ( 1 << 2 ) ) > 0 ) {
-								topics[ "value/otg/flame_status_dhw" ] = 1;
+								topics[ `${config.mqtt.topic.values}/flame_status_dhw` ] = 1;
 							} else {
-								topics[ "value/otg/flame_status_dhw" ] = 0;
+								topics[ `${config.mqtt.topic.values}/flame_status_dhw` ] = 0;
 							}
 
 							if ( ( topics[ topic ] & ( 1 << 3 ) ) > 0 ) {
-								topics[ "value/otg/flame_status_bit" ] = 1;
+								topics[ `${config.mqtt.topic.values}/flame_status_bit` ] = 1;
 							} else {
-								topics[ "value/otg/flame_status_bit" ] = 0;
+								topics[ `${config.mqtt.topic.values}/flame_status_bit` ] = 0;
 							}
 						}
 						break;

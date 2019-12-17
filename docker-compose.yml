@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+  otg2mqtt:
+    build: .
+    devices:
+      - "/dev/ttyUSB0:/dev/ttyUSB0"
+    restart: always
+    # volumes:
+    #   - /etc/localtime:/etc/localtime
+    #   - /etc/timezone:/etc/timezone
