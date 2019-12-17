@@ -6,10 +6,8 @@
 */
 
 const config = require('./config/config.json')
-
 const openthermGateway = require('./lib/opentherm_gateway.js')
 const mqtt = require('./lib/mqtt.js')
-
 const convert = require('./lib/convert.js')
 const constants = require('./lib/constants.js')
 
@@ -92,23 +90,23 @@ mqtt.on( 'message', function ( { topic, message } ) {
 			break;
 
 		case config.mqtt.topic.control.temp_temporary:
-			openthermGateway.write(`TT=${message}`);
+			openthermGateway.write('TT', message);
 			result = message;
 			break;
 
 		case config.mqtt.topic.control.temp_constant:
-			openthermGateway.write(`TC=${message}`);
+			openthermGateway.write('TC', message);
 			result = message;
 			break;
 
 		case config.mqtt.topic.control.hot_water:
 			result = message;
-			openthermGateway.write(`HW=${message}`);
+			openthermGateway.write('HW', message);
 			break;
 
 		case config.mqtt.topic.control.temp_outside:
 			result = message;
-			openthermGateway.write(`OT=${message}`);
+			openthermGateway.write('OT', message);
 			break;
 		default:
 			console.error(`Topic ${topic} not supported`)
