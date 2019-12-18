@@ -26,8 +26,8 @@ openthermGateway.on('data', data => {
 	const id = parseInt( data.slice( 3, 5 ), 16 ); //
 	const payload = data.slice( -4 ); // last 4 chars
 
-	if (data.length != 9) {
-		console.warn(`Invalid data length: ${data}`)
+	if (data.indexOf(':') > -1 || data.length != 9) {
+		return
 	}
 
 	if ( isSupportedMessage(target, type) && id in constants.OPENTHERM_IDS ) {
@@ -75,7 +75,7 @@ openthermGateway.on('data', data => {
 		for ( let topic in topics ) {
 			const message = topics[topic]
 			if ( message !== previous[ topic ] ) {
-				console.log(`Received new value for data field '${openthermId.name}': '${message}'`)
+				console.log(`Received from OpenTherm Gateway => ${openthermId.name} = '${topics[topic]}'`)
 				mqtt.publish( topic, String( message ), {
 					retain: true,
 					qos: 1
