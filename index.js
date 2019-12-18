@@ -16,7 +16,6 @@ openthermGateway.on('message', ({ field, value }) => {
 })
 
 mqtt.on( 'message', function ( { topic, value } ) {
-    let result = null
     let id = null
 
     switch ( topic ) {
