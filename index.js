@@ -9,11 +9,17 @@ const config = require('./config/config.json')
 const openthermGateway = require('./lib/opentherm_gateway.js')
 const mqtt = require('./lib/mqtt.js')
 
+/**
+ * OpenTherm -> MQTT
+ */
 openthermGateway.on('message', ({ field, value }) => {
     const topic = `${config.mqtt.topic.values}/${field}`
     mqtt.publish( topic, value, { retain: true, qos: 1 })
 })
 
+/**
+ * MQTT -> OpenTherm
+ */
 mqtt.on( 'message', function ( { topic, value } ) {
     switch ( topic ) {
         case config.mqtt.topic.control.temp_temporary:
