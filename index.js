@@ -31,7 +31,8 @@ mqtt.on( 'message', function ( { topic, value } ) {
             break;
 
         case config.mqtt.topic.control.hot_water:
-            openthermGateway.setDomesticHotWaterEnabled(value === 1)
+            const enabled = value === '1'
+            openthermGateway.setDomesticHotWaterEnabled(enabled)
             break;
 
         case config.mqtt.topic.control.temp_outside:
