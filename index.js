@@ -66,25 +66,29 @@ openthermGateway.on('data', data => {
 			case 'u16':
 				topics[ topic ] = parseInt( payload, 16 );
 				break;
-			
+
 			default:
 				console.warn(`Unsupported OpenTherm data type ${openthermId.type}`)
 		}
 
 		// check for changes that need to be published
 		for ( let topic in topics ) {
-			if ( topics[ topic ] !== previous[ topic ] ) {
-				mqtt.publish( topic, String( topics[ topic ] ), {
+			const message = topics[topic]
+			if ( message !== previous[ topic ] ) {
+				console.log(`Received new value for data field '${openthermId.name}': '${message}'`)
+				mqtt.publish( topic, String( message ), {
 					retain: true,
 					qos: 1
 				} );
-				previous[ topic ] = topics[ topic ];
+				previous[ topic ] = message;
 			}
 		}
 	}
 })
 
 mqtt.on( 'message', function ( { topic, message } ) {
+	const result
+
 	switch ( topic ) {
 		case config.mqtt.topic.control.status:
 			result = 'online';
@@ -113,5 +117,7 @@ mqtt.on( 'message', function ( { topic, message } ) {
 			console.error(`Topic ${topic} not supported`)
 	}
 
-	mqtt.publish(`${config.mqtt.topic.log}/${topic}`, result );
+	if (result) {
+		mqtt.publish(`${config.mqtt.topic.log}/${topic}`, result );
+	}
 });
