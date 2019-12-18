@@ -10,35 +10,30 @@ const openthermGateway = require('./lib/opentherm_gateway.js')
 const mqtt = require('./lib/mqtt.js')
 
 openthermGateway.on('message', ({ field, value }) => {
-    console.log(`Received from OpenTherm Gateway => ${field} = '${value}'`)
     const topic = `${config.mqtt.topic.values}/${field}`
     mqtt.publish( topic, value, { retain: true, qos: 1 })
 })
 
 mqtt.on( 'message', function ( { topic, value } ) {
-    let id = null
-
     switch ( topic ) {
         case config.mqtt.topic.control.temp_temporary:
-            id = 'TT'
+            openthermGateway.setRemoteSetpointOverride(value)
             break;
+
         case config.mqtt.topic.control.temp_constant:
-            id = 'TC'
+            openthermGateway.setRoomSetpoint(value)
             break;
+
         case config.mqtt.topic.control.hot_water:
-            id = 'HW'
+            openthermGateway.setDomesticHotWaterEnabled(value === 1)
             break;
+
         case config.mqtt.topic.control.temp_outside:
-            id = 'OT'
+            openthermGateway.setOutsideTemperature(value)
             break;
+
         default:
             console.error(`Topic ${topic} not supported`)
             break;
-    }
-
-    if (id && value) {
-        console.log(`Write to OpenTherm Gateway => ${id} = ${value}`)
-        openthermGateway.write(id, value);
-        mqtt.publish(`${config.mqtt.topic.log}/${topic}`, value);
     }
 });
