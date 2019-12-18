@@ -87,7 +87,7 @@ openthermGateway.on('data', data => {
 })
 
 mqtt.on( 'message', function ( { topic, message } ) {
-	const result
+	let result = null
 
 	switch ( topic ) {
 		case config.mqtt.topic.control.status:
