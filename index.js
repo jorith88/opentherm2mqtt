@@ -13,34 +13,33 @@ const mqtt = require('./lib/mqtt.js')
  * OpenTherm -> MQTT
  */
 openthermGateway.on('message', ({ field, value }) => {
-    const topic = `${config.mqtt.topic.values}/${field}`
-    mqtt.publish( topic, value, { retain: true, qos: 1 })
+    mqtt.publishValue(field, value)
 })
 
 /**
  * MQTT -> OpenTherm
  */
-mqtt.on( 'message', function ( { topic, value } ) {
-    switch ( topic ) {
-        case config.mqtt.topic.control.temp_temporary:
+mqtt.on( 'message', function ( { field, value } ) {
+    switch ( field ) {
+        case config.control_fields.temp_temporary:
             openthermGateway.setRemoteSetpointOverride(value)
             break;
 
-        case config.mqtt.topic.control.temp_constant:
+        case config.control_fields.temp_constant:
             openthermGateway.setRoomSetpoint(value)
             break;
 
-        case config.mqtt.topic.control.hot_water:
+        case config.control_fields.hot_water:
             const enabled = value === '1'
             openthermGateway.setDomesticHotWaterEnabled(enabled)
             break;
 
-        case config.mqtt.topic.control.temp_outside:
+        case config.control_fields.temp_outside:
             openthermGateway.setOutsideTemperature(value)
             break;
 
         default:
-            console.error(`Topic ${topic} not supported`)
+            console.error(`Control field '${field}' not supported`)
             break;
     }
 });

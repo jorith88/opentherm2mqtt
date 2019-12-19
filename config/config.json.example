@@ -10,15 +10,14 @@
         "topic": {
             "status": "status/otg",
             "log": "log/otg",
-            "control": {
-                "subscribe": "control/otg/#",
-                "status": "control/otg/status",
-                "temp_temporary": "control/otg/tt",
-                "temp_constant": "control/otg/tc",
-                "hot_water": "control/otg/hw",
-                "temp_outside": "control/otg/ot"
-            },
+            "control": "control/otg",
             "values": "value/otg"
         }
+    },
+    "control_fields": {
+        "temp_temporary": "tt",
+        "temp_constant": "tc",
+        "hot_water": "hw",
+        "temp_outside": "ot"
     }
 }
