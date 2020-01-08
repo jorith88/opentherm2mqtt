@@ -18,6 +18,7 @@
         "temp_temporary": "tt",
         "temp_constant": "tc",
         "hot_water": "hw",
-        "temp_outside": "ot"
+        "temp_outside": "ot",
+        "raw": "raw"
     }
 }

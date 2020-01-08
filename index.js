@@ -38,6 +38,10 @@ mqtt.on( 'message', function ( { field, value } ) {
             openthermGateway.setOutsideTemperature(value)
             break;
 
+        case config.control_fields.raw:
+            openthermGateway.rawCommand(value)
+            break;
+
         default:
             console.error(`Control field '${field}' not supported`)
             break;
