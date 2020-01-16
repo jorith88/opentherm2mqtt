@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /*
 * Description: Connect OpenTherm gateway to MQTT
 * Author: https://github.com/githubcdr/, https://github.com/jorith88/
