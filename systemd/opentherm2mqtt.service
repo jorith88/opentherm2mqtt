@@ -1,0 +1,15 @@
+[Unit]
+Description=OpenTherm2MQTT
+
+[Service]
+ExecStart=/path/to/opentherm2mqtt/index.js
+Restart=always
+User=username
+# Note Debian/Ubuntu uses 'nogroup', RHEL/Fedora uses 'nobody'
+Group=groupname
+Environment=PATH=/usr/bin:/usr/local/bin
+Environment=NODE_ENV=production
+WorkingDirectory=/path/to/opentherm2mqtt
+
+[Install]
+WantedBy=multi-user.target
