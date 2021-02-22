@@ -23,6 +23,6 @@
   "homepage": "https://github.com/jorith88/opentherm2mqtt#readme",
   "dependencies": {
     "mqtt": "^4.2.4",
-    "serialport": "^9.0.1"
+    "serialport": "^9.0.7"
   }
 }
